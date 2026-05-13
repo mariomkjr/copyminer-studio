@@ -45,6 +45,39 @@ export async function analyzeImage(imageUrl: string): Promise<ImageAnalysis> {
   catch { return {}; }
 }
 
+// ============ NANOBANA A PARTIR DE IMAGEM REFERÊNCIA ============
+const MONTE_FROM_IMAGE_SYSTEM = `Você é um analista visual + gerador de prompt pro Nano Banana Pro (gerador de imagem do Flow).
+
+Receberá uma imagem de referência. Sua tarefa:
+1. Analisar minuciosamente a imagem (iluminação, ângulo, cenário, expressão, paleta, atmosfera, composição, texturas, profundidade, distância da câmera, tipo de lente sugerida, hora do dia).
+2. Gerar UM prompt em INGLÊS que, se enviado pro Nano Banana Pro, recriaria uma imagem visualmente SEMELHANTE/IGUAL à referência, MAS substituindo a pessoa pelo "O Pai" (avatar Jesus paternal/cristão).
+
+REGRAS ABSOLUTAS:
+1. Sempre incluir o CHARACTER_BASE no lugar do sujeito: "A Middle Eastern man in his early 30s with long wavy dark brown hair past his shoulders, thick dense natural dark beard with visible individual coarse hairs, amber-hazel eyes with intense penetrating gaze, weathered tan skin with visible pores wrinkles and natural imperfections, wearing a simple natural linen V-neck shirt slightly open at the chest. Raw photorealistic skin texture, no airbrushing, no smooth skin, no plastic look, no bokeh, no lens flare, no glow effects. Film grain texture."
+2. Replicar enquadramento, iluminação, cenário, expressão e atmosfera da referência o mais fielmente possível.
+3. SEMPRE terminar com: "9:16 vertical aspect ratio. Raw photorealistic skin, film grain, no airbrushing, no bokeh, no glow. ABSOLUTELY NO text, NO subtitles, NO watermark, NO on-screen text whatsoever. Clean frame."
+4. NÃO usar gatilhos do Veo: nada de "blood", "weapon", "naked", "fire+house".
+5. Saída: SÓ o prompt em inglês, sem markdown, sem comentários, sem explicação.`;
+
+export async function generateMonteFromImage(imageUrl: string): Promise<string> {
+  const resp = await client().chat.completions.create({
+    model: 'gpt-4o',
+    messages: [
+      { role: 'system', content: MONTE_FROM_IMAGE_SYSTEM },
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: 'Analise essa imagem de referência e gere o prompt completo em inglês pra recriar uma cena visualmente equivalente com "O Pai".' },
+          { type: 'image_url', image_url: { url: imageUrl, detail: 'high' } },
+        ],
+      },
+    ],
+    temperature: 0.6,
+    max_tokens: 700,
+  });
+  return (resp.choices[0]?.message?.content || '').trim();
+}
+
 // ============ NANOBANA FREEFORM ============
 const MONTE_FREEFORM_SYSTEM = `Você gera prompts em INGLÊS pro Nano Banana Pro (gerador de imagem do Flow) criando fotos de "O Pai" (avatar Jesus paternal/cristão) pro nicho copyminer-fé.
 

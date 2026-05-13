@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import { useDropzone } from 'react-dropzone';
 
 type Opt = { key: string; label: string };
-type Mode = 'guided' | 'freeform';
+type Mode = 'guided' | 'freeform' | 'from-image';
 
 export default function GeradorImagemForm({
   emocoes, iluminacoes, cenarios, angulos,
@@ -15,6 +16,7 @@ export default function GeradorImagemForm({
   const [angulo, setAngulo] = useState(angulos[0]?.key || '');
   const [extras, setExtras] = useState('');
   const [idea, setIdea] = useState('');
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -22,6 +24,7 @@ export default function GeradorImagemForm({
 
   async function handleGenerate(e: React.FormEvent) {
     e.preventDefault();
+    if (mode === 'from-image') return; // handled by dropzone
     setLoading(true);
     setPrompt('');
     setCopied(false);
@@ -45,6 +48,40 @@ export default function GeradorImagemForm({
     }
     setPrompt(data.prompt);
   }
+
+  async function handleImageUpload(file: File) {
+    setLoading(true);
+    setPrompt('');
+    setCopied(false);
+    setError('');
+    setPreviewUrl(URL.createObjectURL(file));
+    const form = new FormData();
+    form.append('file', file);
+    const res = await fetch('/api/generate-monte-from-image', {
+      method: 'POST',
+      body: form,
+    });
+    const data = await res.json();
+    setLoading(false);
+    if (!res.ok) {
+      setError(`${data?.error || 'Falha'}${data?.detail ? `: ${data.detail}` : ''}`);
+      return;
+    }
+    setPrompt(data.prompt);
+  }
+
+  const onDrop = useCallback((files: File[]) => {
+    const file = files[0];
+    if (file) handleImageUpload(file);
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: { 'image/*': ['.jpg', '.jpeg', '.png', '.webp'] },
+    maxSize: 10 * 1024 * 1024,
+    multiple: false,
+    disabled: loading,
+  });
 
   async function handleCopy() {
     await navigator.clipboard.writeText(prompt);
@@ -84,11 +121,54 @@ export default function GeradorImagemForm({
         >
           ✨ Use a imaginação
         </button>
+        <button
+          type="button"
+          onClick={() => setMode('from-image')}
+          className={`px-4 py-2 text-sm font-medium rounded-md transition ${
+            mode === 'from-image' ? 'bg-amber-600 text-white' : 'text-zinc-700 hover:bg-zinc-50'
+          }`}
+        >
+          📷 A partir de imagem
+        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <form onSubmit={handleGenerate} className="space-y-4 rounded-lg border border-zinc-200 bg-white p-6">
-          {mode === 'guided' ? (
+          {mode === 'from-image' ? (
+            <div>
+              <label className="text-sm font-medium text-zinc-700 mb-1.5 block">
+                Imagem de referência
+              </label>
+              <div
+                {...getRootProps()}
+                className={`rounded-lg border-2 border-dashed p-6 text-center cursor-pointer transition ${
+                  isDragActive
+                    ? 'border-amber-500 bg-amber-50'
+                    : loading
+                      ? 'border-zinc-200 bg-zinc-50 cursor-wait'
+                      : 'border-zinc-300 bg-zinc-50 hover:border-amber-400 hover:bg-amber-50/30'
+                }`}
+              >
+                <input {...getInputProps()} />
+                {!previewUrl && !loading && (
+                  <>
+                    <p className="text-base text-zinc-900 font-medium mb-1">Arrasta a imagem aqui</p>
+                    <p className="text-sm text-zinc-600">ou clica pra escolher (jpg/png/webp, máx 10 MB)</p>
+                    <p className="text-xs text-zinc-500 mt-3">A IA analisa e gera um prompt pra recriar a cena com &quot;O Pai&quot;.</p>
+                  </>
+                )}
+                {previewUrl && (
+                  <div className="flex flex-col items-center gap-3">
+                    <img src={previewUrl} alt="ref" className="max-h-48 rounded shadow-md" />
+                    {loading
+                      ? <p className="text-base text-zinc-900 font-medium animate-pulse">Analisando e gerando prompt…</p>
+                      : <p className="text-sm text-zinc-600">Trocar imagem? Solte outra aqui.</p>}
+                  </div>
+                )}
+              </div>
+              {error && <p className="text-sm text-red-700 mt-2">{error}</p>}
+            </div>
+          ) : mode === 'guided' ? (
             <>
               <div>
                 <label className="text-sm font-medium text-zinc-700 mb-1.5 block">Emoção</label>
@@ -136,14 +216,18 @@ export default function GeradorImagemForm({
               </div>
             </>
           )}
-          <button
-            type="submit"
-            disabled={loading || (mode === 'freeform' && idea.trim().length < 5)}
-            className="w-full rounded-md bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-60"
-          >
-            {loading ? 'Gerando…' : mode === 'freeform' ? '✨ Gerar com IA' : 'Gerar prompt'}
-          </button>
-          {error && <p className="text-sm text-red-700">{error}</p>}
+          {mode !== 'from-image' && (
+            <>
+              <button
+                type="submit"
+                disabled={loading || (mode === 'freeform' && idea.trim().length < 5)}
+                className="w-full rounded-md bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-60"
+              >
+                {loading ? 'Gerando…' : mode === 'freeform' ? '✨ Gerar com IA' : 'Gerar prompt'}
+              </button>
+              {error && <p className="text-sm text-red-700">{error}</p>}
+            </>
+          )}
         </form>
 
         <div className="rounded-lg border border-zinc-200 bg-white p-6 flex flex-col">
@@ -166,7 +250,11 @@ export default function GeradorImagemForm({
             />
           ) : (
             <p className="text-sm text-zinc-500 italic">
-              {mode === 'freeform' ? 'Descreva sua ideia e clique em "Gerar com IA".' : 'Preencha e clique em "Gerar prompt".'}
+              {mode === 'from-image'
+                ? 'Faça upload de uma imagem de referência.'
+                : mode === 'freeform'
+                  ? 'Descreva sua ideia e clique em "Gerar com IA".'
+                  : 'Preencha e clique em "Gerar prompt".'}
             </p>
           )}
           {prompt && (
