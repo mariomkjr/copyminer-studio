@@ -1,8 +1,18 @@
 @import "tailwindcss";
 
+/* Força light mode — design pensado pro time MK em luz */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fafaf9;        /* zinc-50 */
+  --foreground: #18181b;        /* zinc-900 */
+  --surface: #ffffff;
+  --surface-muted: #f4f4f5;     /* zinc-100 */
+  --border: #e4e4e7;            /* zinc-200 */
+  --text-primary: #18181b;      /* zinc-900 */
+  --text-secondary: #3f3f46;    /* zinc-700 */
+  --text-tertiary: #71717a;     /* zinc-500 */
+  --accent: #d97706;            /* amber-600 */
+  --accent-hover: #b45309;      /* amber-700 */
+  --accent-soft: #fef3c7;       /* amber-100 */
 }
 
 @theme inline {
@@ -12,15 +22,39 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
+html, body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
+
+/* Headings */
+h1, h2, h3 {
+  letter-spacing: -0.015em;
+  color: var(--text-primary);
+}
+
+/* Inputs maiores e mais legíveis */
+input, textarea, select {
+  font-size: 15px;
+}
+
+/* Tabelas com leitura confortável */
+table { font-size: 14px; }
+table th { font-weight: 600; color: var(--text-secondary); }
+table td { color: var(--text-primary); }
+
+/* Code/mono um pouco maior */
+code, pre, .font-mono { font-size: 0.875em; }
+
+/* Scroll bonito */
+* { scroll-behavior: smooth; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 5px; }
+::-webkit-scrollbar-thumb:hover { background: #a1a1aa; }

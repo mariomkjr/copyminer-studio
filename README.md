@@ -1,36 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# copyminer-studio
 
-## Getting Started
+App web interna do time MK pra **gerar prompts** Veo (P1 + Extend) e Nanobana, baseado no conhecimento acumulado da skill `copyminer-fé`.
 
-First, run the development server:
+A app **não dispara geração** — só entrega o prompt pronto pra colar no Flow.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Stack
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- Next.js 16 + React 19 + TypeScript
+- Tailwind CSS v4
+- Supabase (Auth magic link + Postgres + Storage)
+- OpenAI GPT-4o (vision)
+- Deploy: Coolify
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Setup local
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Cria projeto no Supabase
+2. Roda as migrations em `supabase/migrations/0001..0007*.sql` no SQL editor (na ordem)
+3. Copia `.env.example` → `.env.local` e preenche
+4. `npm install`
+5. `npx tsx scripts/seed.ts` → popula formatos, montes, psicologia, ~870 copies (importadas do `COPIES-USADAS.md` da skill)
+6. `npm run dev` → http://localhost:3000
 
-## Learn More
+## Rotas
 
-To learn more about Next.js, take a look at the following resources:
+- `/` — Dashboard (4 cards)
+- `/login` — Magic link
+- `/gerador-video` — Upload imagem ref → análise GPT-4o → prompts P1+Extend
+- `/gerador-imagem` — Form → prompt Nanobana
+- `/biblioteca` — Formatos / Psicologia / Regras
+- `/historico` — Tabela paginada com filtros (851+ copies)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Convites
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+MK cria usuários via Supabase Admin (Auth → Users → Add user → enviar invite). Membro recebe email com magic link.
 
-## Deploy on Vercel
+## Deploy Coolify
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Build via `Dockerfile` (Next.js standalone)
+- Subdomain: `copyminer.creioemtesenhor.com` (a configurar)
+- Env vars no Coolify:
+  - `NEXT_PUBLIC_SUPABASE_URL`
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+  - `SUPABASE_SERVICE_ROLE_KEY`
+  - `OPENAI_API_KEY`
+  - `NEXT_PUBLIC_APP_URL` (URL final pública)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Templates
+
+Os templates de prompt (P1, Extend, Nanobana) ficam em `lib/templates.ts` — fonte de verdade copiada do `skills/copyminer-fe/scripts/batch-v9-extend.js` + `data/character-jesus-reference.md`.
