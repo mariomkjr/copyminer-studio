@@ -5,6 +5,10 @@ import SignOutButton from '@/components/SignOutButton';
 export default async function Home() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  const { data: tm } = user
+    ? await supabase.from('team_members').select('role').eq('user_id', user.id).maybeSingle()
+    : { data: null };
+  const isAdmin = tm?.role === 'admin';
 
   const cards = [
     {
@@ -39,6 +43,11 @@ export default async function Home() {
         <div className="mx-auto max-w-6xl px-6 py-4 flex items-center justify-between">
           <h1 className="text-base font-semibold text-zinc-900">copyminer-studio</h1>
           <div className="flex items-center gap-4">
+            {isAdmin && (
+              <Link href="/admin" className="text-sm font-semibold text-amber-700 hover:underline">
+                Admin
+              </Link>
+            )}
             <span className="text-sm text-zinc-600">{user?.email}</span>
             <SignOutButton />
           </div>

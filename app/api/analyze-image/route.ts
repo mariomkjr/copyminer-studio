@@ -61,6 +61,18 @@ export async function POST(req: NextRequest) {
   const p1_prompt = buildP1Prompt(analysis, copy.p1_copy);
   const ext_prompt = buildExtendPrompt(analysis, copy.p2_copy);
 
+  // Log da geração
+  await supabase.from('prompt_generations').insert({
+    user_id: user.id,
+    kind: 'video',
+    input_image_url: publicUrl,
+    image_analysis: analysis,
+    p1_copy: copy.p1_copy,
+    p2_copy: copy.p2_copy,
+    p1_prompt,
+    ext_prompt,
+  });
+
   return NextResponse.json({
     imageUrl: publicUrl,
     analysis,

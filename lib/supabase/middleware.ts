@@ -31,6 +31,7 @@ export async function updateSession(request: NextRequest) {
   // Rotas públicas
   const isPublic =
     path.startsWith('/login') ||
+    path.startsWith('/signup') ||
     path.startsWith('/auth') ||
     path.startsWith('/_next') ||
     path === '/favicon.ico';
@@ -42,10 +43,24 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (user && path === '/login') {
+  if (user && (path === '/login' || path === '/signup')) {
     const url = request.nextUrl.clone();
     url.pathname = '/';
     return NextResponse.redirect(url);
+  }
+
+  // Bloqueia /admin pra não-admins
+  if (user && path.startsWith('/admin')) {
+    const { data: tm } = await supabase
+      .from('team_members')
+      .select('role')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (tm?.role !== 'admin') {
+      const url = request.nextUrl.clone();
+      url.pathname = '/';
+      return NextResponse.redirect(url);
+    }
   }
 
   return supabaseResponse;
